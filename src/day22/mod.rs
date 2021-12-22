@@ -21,54 +21,35 @@ pub fn part1() {
             let high: isize = parts.next().unwrap().parse::<isize>().unwrap() + 1;
             coords.push((low, high));
         }
-        let coords = [coords[0], coords[1], coords[2]];
         program.push((is_on, coords));
     }
 
     // Holds all the on areas. Initially everything is off
-    let mut state: Vec<[(isize, isize); 3]> = vec![];
+    let mut state: Vec<Vec<(isize, isize)>> = vec![];
     let mut temp_state = vec![];
-    for (is_on, [new_x, new_y, new_z]) in program {
-        for [old_x, old_y, old_z] in state.drain(..) {
-            // Slice the area we have in our state based on the sides of the new area
-            let top = [
-                old_x,
-                old_y,
-                (min(max(new_z.1, old_z.0), old_z.1), old_z.1),
-            ];
-            let bottom = [
-                old_x,
-                old_y,
-                (old_z.0, max(min(new_z.0, old_z.1), old_z.0)),
-            ];
-            let front = [
-                old_x,
-                (min(max(new_y.1, old_y.0), old_y.1), old_y.1),
-                (bottom[2].1, top[2].0)
-            ];
-            let back = [
-                old_x,
-                (old_y.0, max(min(new_y.0, old_y.1), old_y.0)),
-                (bottom[2].1, top[2].0)
-            ];
-            let left = [
-                (min(max(new_x.1, old_x.0), old_x.1), old_x.1),
-                (back[1].1, front[1].0),
-                (bottom[2].1, top[2].0)
-            ];
-            let right = [
-                (old_x.0, max(min(new_x.0, old_x.1), old_x.0)),
-                (back[1].1, front[1].0),
-                (bottom[2].1, top[2].0)
-            ];
-            for face in [top, bottom, front, back, left, right] {
-                if !is_zero(&face) {
-                    temp_state.push(face);
+    for (is_on, new_shape) in program {
+        for cur_shape in state.drain(..) {
+            // Carve out the area we have in our state based on the new area
+            let mut tmp = cur_shape.clone();
+            // There are two sides per dimention
+            for i in 0..new_shape.len() {
+                let mut side_a = tmp.clone();
+                side_a[i] = (min(max(new_shape[i].1, cur_shape[i].0), cur_shape[i].1), cur_shape[i].1);
+
+                let mut side_b = tmp.clone();
+                side_b[i] = (cur_shape[i].0, max(min(new_shape[i].0, cur_shape[i].1), cur_shape[i].0));
+
+                tmp[i] = (side_b[i].1, side_a[i].0);
+                if !is_zero(&side_a) {
+                    temp_state.push(side_a);
+                }
+                if !is_zero(&side_b) {
+                    temp_state.push(side_b);
                 }
             }
         };
         if is_on {
-            temp_state.push([new_x, new_y, new_z]);
+            temp_state.push(new_shape);
         }
         std::mem::swap(&mut state, &mut temp_state);
     }
